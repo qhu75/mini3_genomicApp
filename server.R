@@ -6,9 +6,9 @@ library(jsonlite)
 library(shinycssloaders)
 library(DT)
 library(GenomicRanges)
-library(VariantAnnotation)
-library(BSgenome.Hsapiens.UCSC.hg38)
-library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+##library(VariantAnnotation)
+##library(BSgenome.Hsapiens.UCSC.hg38)
+##library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(org.Hs.eg.db)
 library(g3viz)
 
@@ -59,12 +59,15 @@ gene2reg <- function(gene){
 }
 
 VarAnno <- function(variants){
-    v1 <- VRanges(paste0("chr", variants$code),
+    v1 <- VariantAnnotation::VRanges(paste0("chr", variants$code),
                   IRanges(as.integer(variants$start), as.integer(variants$end)),
                   ref = variants$referenceAllele,
                   alt = variants$observedAllele)
     
-    v1a <- suppressWarnings(predictCoding(v1, TxDb.Hsapiens.UCSC.hg38.knownGene, seqSource=Hsapiens))
+    v1a <- suppressWarnings(
+        VariantAnnotation::predictCoding(v1,
+                                         TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene,
+                                         seqSource=BSgenome.Hsapiens.UCSC.hg38::Hsapiens))
     v1a <- v1a[!is.na(v1a$GENEID),]
     idx <- findOverlaps(v1, v1a, type = "equal")
     idx <- na.omit(subjectHits(idx)[match(seq(v1), queryHits(idx))])
