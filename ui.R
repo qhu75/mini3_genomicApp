@@ -1,6 +1,9 @@
 # example from http://shiny.rstudio.com/gallery/kmeans-example.html
 
 library(shiny)
+library(shinycssloaders)
+library(DT)
+library(g3viz)
 
 ui <- fluidPage(
   titlePanel("Genomic Exploration in HAPI-FHIR"),

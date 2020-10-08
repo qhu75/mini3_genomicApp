@@ -3,8 +3,8 @@
 # Example R code to install packages if not already installed
 #
 
-my_packages = c("httr", "jsonlit", "shiny", "shinycssloaders", "DT",
-                "GenommicRanges", "VariantAnnotation",
+my_packages = c("httr", "jsonlite", "shiny", "shinycssloaders", "DT",
+                "GenomicRanges", "VariantAnnotation",
                 "BSgenome.Hsapiens.UCSC.hg38",
                 "TxDb.Hsapiens.UCSC.hg38.knownGene", "org.Hs.eg.db",
                 "g3viz")

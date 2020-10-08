@@ -1,6 +1,16 @@
 # example from http://shiny.rstudio.com/gallery/kmeans-example.html
 
 library(shiny)
+library(httr)
+library(jsonlite)
+library(shinycssloaders)
+library(DT)
+library(GenomicRanges)
+library(VariantAnnotation)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+library(org.Hs.eg.db)
+library(g3viz)
 
 SearchRegion <- function(chr, start, end, gbuild = "hg38"){
     ## RESTful API
