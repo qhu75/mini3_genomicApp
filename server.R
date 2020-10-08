@@ -5,7 +5,7 @@ library(httr)
 library(jsonlite)
 library(shinycssloaders)
 library(DT)
-library(GenomicRanges)
+##library(GenomicRanges)
 ##library(VariantAnnotation)
 ##library(BSgenome.Hsapiens.UCSC.hg38)
 ##library(TxDb.Hsapiens.UCSC.hg38.knownGene)
@@ -85,6 +85,45 @@ VarAnno <- function(variants){
     return(muts)
 }
 
+VEP <- function(chr, start, end, alt){
+    url <- paste0("https://rest.ensembl.org/vep/human/region/",
+                  chr, ":", start, ":", end, "/", alt)
+    httr_config <- config(ssl_cipher_list = "DEFAULT@SECLEVEL=1")
+    res <- with_config(config = httr_config, GET(url)) 
+    a1 <- fromJSON(httr::content(res, as = "text", encoding = "utf8"))
+    t1 <- a1$transcript_consequences[[1]]
+    if(all(c("gene_symbol", "consequence_terms", "protein_start", "amino_acids")
+           %in% colnames(t1))){
+        aa1 <- t1[1, c("gene_symbol", "consequence_terms", "protein_start", "amino_acids")]
+        pp <- strsplit(aa1$amino_acid, split = "/")[[1]]
+        aa1$amino_acid_change <- paste0("p.", pp[1], aa1$protein_start, pp[2])
+    }else{
+        aa1 <- NULL
+    }
+    return(aa1)
+}
+
+VarAnnoVEP <- function(variants){
+    anno <- c()
+    for(i in 1:nrow(variants)){
+        print(i)
+        x <- variants[i,,drop=F]
+        a1 <- VEP(x$code, x$start, x$end, x$observedAllele)
+        if(!is.null(a1)){
+            anno <- rbind(
+                anno,
+                cbind(variants[i,c("code", "start", "observedAllele")],
+                      a1))
+        }
+    }
+    anno <- anno[,c("code", "start", "observedAllele", "gene_symbol",
+                    "consequence_terms", "amino_acid_change", "protein_start")]
+    colnames(anno) <- c("Chromosome", "Start_Position", "Tumor_Seq_Allele2",
+                        "Hugo_Symbol", "Variant_Classification", "amino_acid_change",
+                        "AA_Position")
+    return(anno)
+}
+
 SearchDGIdb <- function(gene){
     gdb <- GET(paste0("https://dgidb.org/api/v2/interactions.json?genes=", gene))
     gres <- fromJSON(httr::content(gdb, as = "text"))
@@ -92,7 +131,7 @@ SearchDGIdb <- function(gene){
     return(intact)
 }
 
-server <- function(input, output){
+server <- function(input, output, session){
     datasetInput <- eventReactive(input$search, {
         gene <- input$gene
         region <- input$region
@@ -108,8 +147,11 @@ server <- function(input, output){
 
     mutInput <- eventReactive(input$annot, {
         vars <- datasetInput()
-        if(!is.null(vars)){
-            VarAnno(vars)
+        vars_s <- vars[input$vars_rows_selected,]
+        if(!is.null(vars_s)){
+            VarAnnoVEP(vars_s)
+        }else{
+            VarAnnoVEP(vars)
         }
     })
 
@@ -126,7 +168,7 @@ server <- function(input, output){
     })
     
     output$vars <- DT::renderDataTable({datasetInput()}, escape = FALSE)
-    output$muts <- DT::renderDataTable({mutInput()})
+    output$muts <- DT::renderDataTable({mutInput()}, options = list(scrollX = T))
     output$llplot <- renderG3Lollipop({plotInput()})
     output$drug <- DT::renderDataTable({dgiInput()}, options = list(scrollX = T))
 }
