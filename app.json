@@ -1,0 +1,21 @@
+{
+  "name": "mini3_genomicApp",
+  "stack": "heroku-18",
+  "description": "A genomic exploration APP powered by FHIR RESTful and R shiny",
+  "keywords": [
+    "r",
+    "shiny",
+    "FHIR"
+  ],
+  "success_url": "/",
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "https://github.com/virtualstaticvoid/heroku-buildpack-r.git"
+    }
+  ]
+}
