@@ -105,15 +105,19 @@ VEP <- function(chr, start, end, alt){
         res <- with_config(config = httr_config, GET(url)) 
     }
     a1 <- fromJSON(httr::content(res, as = "text", encoding = "utf8"))
-    t1 <- a1$transcript_consequences[[1]]
-    if(all(c("gene_symbol", "consequence_terms", "protein_start", "amino_acids")
-           %in% colnames(t1))){
-        aa1 <- t1[1, c("gene_symbol", "consequence_terms", "protein_start", "amino_acids")]
+    t1 <- a1$transcript_consequences[[1]][1,]
+    t1$other <- NA
+    cols <- c("gene_symbol", "consequence_terms", "protein_start", "amino_acids",
+              "sift_prediction", "polyphen_prediction")
+    aa1 <- t1[,match(cols, colnames(t1), nomatch=ncol(t1))]
+    colnames(aa1) <- cols
+    if(is.na(aa1$amino_acids)){
+        aa1$amino_acid_change <- NA
+    }else{
         pp <- strsplit(aa1$amino_acid, split = "/")[[1]]
         aa1$amino_acid_change <- paste0("p.", pp[1], aa1$protein_start, pp[2])
-    }else{
-        aa1 <- NULL
     }
+    
     return(aa1)
 }
 
@@ -131,10 +135,12 @@ VarAnnoVEP <- function(variants){
         }
     }
     anno <- anno[,c("code", "start", "observedAllele", "gene_symbol",
-                    "consequence_terms", "amino_acid_change", "protein_start")]
+                    "consequence_terms", "amino_acid_change", "protein_start",
+                    "sift_prediction", "polyphen_prediction")]
     colnames(anno) <- c("Chromosome", "Start_Position", "Tumor_Seq_Allele2",
                         "Hugo_Symbol", "Variant_Classification", "amino_acid_change",
-                        "AA_Position")
+                        "AA_Position",
+                        "sift_prediction", "polyphen_prediction")
     return(anno)
 }
 
