@@ -88,8 +88,12 @@ VarAnno <- function(variants){
 VEP <- function(chr, start, end, alt){
     url <- paste0("https://rest.ensembl.org/vep/human/region/",
                   chr, ":", start, ":", end, "/", alt)
-    httr_config <- config(ssl_cipher_list = "DEFAULT@SECLEVEL=1")
-    res <- with_config(config = httr_config, GET(url)) 
+    if(Sys.info()[1]=="Darwin"){
+        res <- GET(url)
+    }else{
+        httr_config <- config(ssl_cipher_list = "DEFAULT@SECLEVEL=1")
+        res <- with_config(config = httr_config, GET(url)) 
+    }
     a1 <- fromJSON(httr::content(res, as = "text", encoding = "utf8"))
     t1 <- a1$transcript_consequences[[1]]
     if(all(c("gene_symbol", "consequence_terms", "protein_start", "amino_acids")
@@ -148,7 +152,7 @@ server <- function(input, output, session){
     mutInput <- eventReactive(input$annot, {
         vars <- datasetInput()
         vars_s <- vars[input$vars_rows_selected,]
-        if(!is.null(vars_s)){
+        if(nrow(vars_s)>0){
             VarAnnoVEP(vars_s)
         }else{
             VarAnnoVEP(vars)
