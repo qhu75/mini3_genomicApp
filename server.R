@@ -17,7 +17,7 @@ SearchRegion <- function(chr, start, end, gbuild = "hg38"){
     r2 <- GET(paste0("http://hapi.fhir.org/baseR4/MolecularSequence?chromosome=", chr,
                      "&variant-start=ge", start, "&variant-end=le", end))
     j <- i <- 0
-    vars <- c()
+    pts <- vars <- c()
     while(TRUE){
         j <- j + 1
         i <- i + 20
@@ -28,17 +28,27 @@ SearchRegion <- function(chr, start, end, gbuild = "hg38"){
         v1 <- r2c$entry$resource$variant
         v1 <- lapply(v1, function(x)x[,c("start", "end", "referenceAllele", "observedAllele")])
         patient <- r2c$entry$resource$patient$reference
+        pts <- c(pts, patient)
         purl <- paste0("http://hapi.fhir.org/baseR4/", patient)
-        pt <- paste0("<a href='",purl,"' target='_blank'>",patient,"</a>")
+        patients <- paste0("<a href='",purl,"' target='_blank'>",patient,"</a>")
         gbuild <- r2c$entry$resource$referenceSeq$genomeBuild
         chr1 <- r2c$entry$resource$referenceSeq$chromosome$coding
         vars <- cbind(do.call(rbind, chr1), do.call(rbind, v1))
-        vars <- data.frame(pt, gbuild, vars)
+        vars <- data.frame(patients, gbuild, vars)
         link2 <- paste0("http://hapi.fhir.org/baseR4?_getpages=", r2c$id,
                         "&_getpagesoffset=",i,
                         "&_count=20&_pretty=true&_bundletype=searchset")
         r2 <- GET(link2)
     }
+    ## latest conditions
+    Condition <- c()
+    for(i in 1:length(pts)){
+        pt1 <- GET(paste0("http://hapi.fhir.org/baseR4/Condition?patient=", pts[i]))
+        cd1 <- fromJSON(httr::content(pt1, as = "text"))
+        cd1 <- paste(cd1$entry$resource$code$text, collapse = "; ")
+        Condition <- c(Condition, cd1)
+    }
+    vars$Condition <- Condition
     ## vars <- vars[vars$start > start & vars$end <= end,]
     if(nrow(vars) > 0){
         vars <- vars[vars$gbuild == gbuild & vars$code == chr &
