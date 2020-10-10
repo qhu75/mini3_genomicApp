@@ -191,4 +191,10 @@ server <- function(input, output, session){
     output$muts <- DT::renderDataTable({mutInput()}, options = list(scrollX = T))
     output$llplot <- renderG3Lollipop({plotInput()})
     output$drug <- DT::renderDataTable({dgiInput()}, options = list(scrollX = T))
+
+    autoInvalidate <- reactiveTimer(10000)
+    observe({
+        autoInvalidate()
+        cat()
+    })
 }
